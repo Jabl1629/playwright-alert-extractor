@@ -4,19 +4,23 @@ from playwright.sync_api import sync_playwright
 app = Flask(__name__)
 
 def extract_alerts(url):
-    with sync_playwright() as p:
-        browser = p.chromium.launch_persistent_context(
-            user_data_dir="sso_session",
-            headless=True
-        )
-        page = browser.new_page()
-        page.goto(url)
+    try:
+        with sync_playwright() as p:  # Ensure Playwright initializes correctly
+            browser = p.chromium.launch_persistent_context(
+                user_data_dir="sso_session",
+                headless=True
+            )
+            page = browser.new_page()
+            page.goto(url)
 
-        alert_text = page.inner_text("div.notification-review")  # Example selector
-        alert_details = page.inner_text("div.alert-details")
+            # Modify these selectors based on your actual HTML structure
+            alert_text = page.inner_text("div.notification-review")
+            alert_details = page.inner_text("div.alert-details")
 
-        browser.close()
-        return {"alert": alert_text.strip(), "details": alert_details.strip()}
+            browser.close()
+            return {"alert": alert_text.strip(), "details": alert_details.strip()}
+    except Exception as e:
+        return {"error": str(e)}
 
 @app.route("/scrape", methods=["POST"])
 def scrape():
