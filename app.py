@@ -8,7 +8,7 @@ def extract_alerts(url):
         with sync_playwright() as p:  # Ensure Playwright initializes correctly
             browser = p.chromium.launch_persistent_context(
                 user_data_dir="sso_session",
-                headless=True
+                headless=False
             )
             page = browser.new_page()
             page.goto(url)
