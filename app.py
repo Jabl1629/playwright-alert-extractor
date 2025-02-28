@@ -1,19 +1,23 @@
-from flask import Flask, request, jsonify
 from playwright.sync_api import sync_playwright
+from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
 def extract_alerts(url):
     try:
-        with sync_playwright() as p:  # Ensure Playwright initializes correctly
+        with sync_playwright() as p:
+            # Reuse the saved login session
             browser = p.chromium.launch_persistent_context(
-                user_data_dir="sso_session",
-                headless=False
+                user_data_dir="sso_session",  # Load the previously saved session
+                headless=True  # Runs in the background
             )
             page = browser.new_page()
-            page.goto(url)
+            page.goto(url, timeout=120000)
 
-            # Modify these selectors based on your actual HTML structure
+            # Debugging: Print the page title to confirm we're logged in
+            print("🔍 Loaded Page Title:", page.title())
+
+            # Extract alert data (Modify these selectors based on actual HTML structure)
             alert_text = page.inner_text("div.notification-review")
             alert_details = page.inner_text("div.alert-details")
 
@@ -25,14 +29,13 @@ def extract_alerts(url):
 @app.route("/scrape", methods=["POST"])
 def scrape():
     try:
-        data = request.get_json(force=True)  # Ensures JSON is parsed correctly
+        data = request.get_json(force=True)
         if not data or "url" not in data:
             return jsonify({"error": "No URL provided"}), 400
 
         url = data["url"]
         alert_data = extract_alerts(url)
         return jsonify(alert_data)
-
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
